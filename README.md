@@ -50,3 +50,14 @@ Use [GitHub Actions — Build WristRoute RPK](https://github.com/danilfg/watch-m
 - [Valhalla](https://valhalla.github.io/valhalla/)
 - [OSM Copyright](https://www.openstreetmap.org/copyright)
 - [Web Bluetooth support](https://caniuse.com/web-bluetooth)
+
+## Create a route-specific RPK for AstroBox (working source and build workflow; device test pending)
+
+1. On [WristRoute Pages](https://danilfg.github.io/watch-maps-smart-band-10-pro/), build a route or import a GPX. Under the export area, click **Скопировать код**.
+2. Open [Build WristRoute RPK](https://github.com/danilfg/watch-maps-smart-band-10-pro/actions/workflows/watch.yml), choose **Run workflow**, paste the code in **route_code**, and start.
+3. Once the workflow run succeeds, open its **Artifacts**, download `WristRoute-Band10Pro-Demo-RPK`, extract `WristRoute-Band10Pro-Demo.rpk`, and install it via AstroBox → Quick Apps. Do **not** use firmware flashing.
+4. The watch app contains up to 400 simplified route points and 60 turn instructions, with manual next/previous navigation and an EXIT button. **GPS position tracking, automatic maneuvers and live phone sync are not implemented.** The RPK build must pass and be tested on the actual watch.
+
+AstroBox does not install a bare GPX/JSON as a watch application, so this route code is compiled into a normal Xiaomi Vela RPK by `aiot-toolkit`. No GitHub personal access token is embedded in Pages. Routes are **not** added to public Releases: personalized builds remain in workflow artifacts. However, this is a public repository and run data/artifacts must not be considered private — avoid private home/work addresses.
+
+This is intentionally a manual path (copy → workflow → artifact → AstroBox), not a seamless one-click transfer on iPhone. The companion BLE/Interconnect feature needs separate compatibility testing.
