@@ -1,0 +1,13 @@
+{
+  "name": "wristroute-vela",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Offline navigation UI prototype for Xiaomi Smart Band 10 Pro",
+  "scripts": {
+    "build": "aiot build",
+    "dev": "aiot start"
+  },
+  "devDependencies": {
+    "aiot-toolkit": "2.0.4"
+  }
+}

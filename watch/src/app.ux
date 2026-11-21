@@ -1,0 +1,6 @@
+<script>
+export default {
+  onCreate() { console.info('WristRoute offline demo opened') },
+  onDestroy() { console.info('WristRoute offline demo closed') }
+}
+</script>

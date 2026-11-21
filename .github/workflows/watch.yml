@@ -1,0 +1,46 @@
+name: Build WristRoute RPK
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'watch/**'
+      - '.github/workflows/watch.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Vela toolkit
+        working-directory: watch
+        run: npm install --no-audit --no-fund
+      - name: Build debug RPK
+        working-directory: watch
+        run: npm run build
+      - name: Validate package
+        run: |
+          test -n "$(find watch/dist -type f -name '*.rpk' -print -quit)"
+          mkdir -p out
+          find watch/dist -type f -name '*.rpk' -exec cp {} out/WristRoute-Band10Pro-Demo.rpk \;
+          test -s out/WristRoute-Band10Pro-Demo.rpk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WristRoute-Band10Pro-Demo-RPK
+          path: out/WristRoute-Band10Pro-Demo.rpk
+          if-no-files-found: error
+      - name: Publish demo RPK release
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="watch-demo-${{ github.run_number }}"
+          gh release create "$TAG" out/WristRoute-Band10Pro-Demo.rpk \
+            --title "WristRoute demo $TAG" \
+            --notes "Offline navigation UI demo ONLY. No live GPS, no Bluetooth sync, no real directions. For Chinese Xiaomi Band 10 Pro Vela firmware; test compatibility carefully."
+            --latest

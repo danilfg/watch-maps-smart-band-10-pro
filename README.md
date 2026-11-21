@@ -1,6 +1,6 @@
 # WristRoute · Xiaomi Smart Band 10 Pro Ceramic
 
-**State: working PWA prototype; no working RPK or Bluetooth transfer yet.**
+**State: PWA prototype + offline watch UI demo. No live GPS or Bluetooth transfer yet.**
 
 Expected site after Pages activation: https://danilfg.github.io/watch-maps-smart-band-10-pro/
 
@@ -13,12 +13,13 @@ Expected site after Pages activation: https://danilfg.github.io/watch-maps-smart
 - Show route geometry, distance, estimated duration, maneuvers supplied by Valhalla.
 - Import GPX, export GPX or versioned 'wrist-route/1' JSON for eventual wearable use.
 - Unit-test/deploy GitHub Actions workflow, PWA manifest and offline app shell cache.
+- Experimental Vela JS offline UI mock in 'watch/', with its own RPK build workflow.
 
 ## Limitations (important)
 1. A full signed-in Yandex Maps web app cannot be read as an iframe from a GitHub Pages origin. The official site remains in its own tab; no credentials are requested or handled.
 2. Yandex share URLs do *not* contain a guaranteed line or turn instructions. Their points are used only as input to a **separate** OSM/Valhalla route. Short links and address-only share URLs aren't supported without further integration.
 3. Ordinary Yandex Maps API licenses restrict route-data storage, modification, and use in third-party navigation. This prototype **does not export Yandex API-derived geometry**.
-4. Static GitHub Pages cannot directly send routes to a band over its proprietary Bluetooth/Interconnect protocol. Safari iOS has no built-in Web Bluetooth. Automatic data transfer, an RPK, watch GPS and live turn prompts are NOT implemented.
+4. Static GitHub Pages cannot directly send routes to a band over its proprietary Bluetooth/Interconnect protocol. Safari iOS has no built-in Web Bluetooth. Automatic data transfer, watch GPS and live turn prompts are NOT implemented. The RPK is only a demo screen with built-in fake turns.
 5. Valhalla public endpoint can fail, throttle or reject cross-origin queries. Use a self-hosted instance for reliable use; check [Valhalla demo use guidance](https://valhalla.github.io/valhalla/start/introduction/). OSM tiles are for interactive browsing and cannot be bulk downloaded for offline map packs.
 6. GPX import brings route points only, not verified instructions or stair alerts. **Do not use for safety-critical navigation.**
 
@@ -30,6 +31,10 @@ Expected site after Pages activation: https://danilfg.github.io/watch-maps-smart
 ## Running locally
 Use any local static server: 'python3 -m http.server 8000 -d docs'. Open http://localhost:8000.
 The app shell can be cached by service worker, but actual map tiles and online routing need internet.
+
+## RPK demo
+
+Use [GitHub Actions — Build WristRoute RPK](https://github.com/danilfg/watch-maps-smart-band-10-pro/actions/workflows/watch.yml) to download an experimental '.rpk' **only if the build succeeds**. It is NOT yet a live navigator. See 'watch/README.md'.
 
 ## Planned
 - GNSS and persistent-storage test RPK for the Chinese Ceramic Edition.
