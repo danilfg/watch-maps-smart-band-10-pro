@@ -15,6 +15,15 @@ function validate(code){
   return {schema:r.schema,mode:r.mode,distanceMeters:Math.round(r.distanceMeters),points,turns};
 }
 if(require.main===module){
+  // Each CI build gets a higher app version so installed route packages can be updated.
+  const n=Number(process.env.GITHUB_RUN_NUMBER||0);
+  if(Number.isSafeInteger(n)&&n>0&&n<100000000){
+    const manifestPath=path.resolve(__dirname,'../src/manifest.json');
+    const manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));
+    manifest.versionCode=100000+n;
+    manifest.versionName='1.0.'+n;
+    fs.writeFileSync(manifestPath,JSON.stringify(manifest,null,2)+'\n');
+  }
   if(!process.env.WRISTROUTE_CODE){process.stdout.write('Using demo route.\n');}
   else{
     const route=validate(process.env.WRISTROUTE_CODE);
