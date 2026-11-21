@@ -6,6 +6,11 @@ on:
       - 'watch/**'
       - '.github/workflows/watch.yml'
   workflow_dispatch:
+    inputs:
+      route_code:
+        description: 'Paste a route code copied from WristRoute Pages (empty for demo)'
+        required: false
+        type: string
 permissions:
   contents: write
 jobs:
@@ -20,6 +25,12 @@ jobs:
       - name: Install Vela toolkit
         working-directory: watch
         run: npm install --no-audit --no-fund
+      - name: Embed route into Vela app
+        env:
+          WRISTROUTE_CODE: ${{ inputs.route_code }}
+        run: node watch/scripts/embed-route.cjs
+      - name: Test route encoder and watch metadata
+        run: node --test watch/tests/*.test.cjs
       - name: Build debug RPK
         working-directory: watch
         run: npm run build
@@ -35,7 +46,7 @@ jobs:
           path: out/WristRoute-Band10Pro-Demo.rpk
           if-no-files-found: error
       - name: Publish demo RPK release
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && inputs.route_code == ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
