@@ -99,5 +99,14 @@ $("gpx-export").onclick=()=>{if(!route)return;const pts=route.coords.map(p=>'<tr
 $("ble-check").onclick=()=>message("Web Bluetooth: "+(navigator.bluetooth?"доступен в браузере":"недоступен")+". Протокол Xiaomi пока не реализован: этот тест НЕ подключает браслет.");
 if(typeof L!=="undefined"){map=L.map("map").setView([55.751244,37.618423],12);L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(map);map.on("click",e=>setPoint(pick,coord(e.latlng.lat,e.latlng.lng)))}
 else message("Не удалось загрузить карту. Проверь интернет. GPX-импорт работает отдельно.",true);
+const shareParams=new URLSearchParams(location.search);
+const shared=shareParams.get("url")||shareParams.get("text")||"";
+if(shared){
+  const found=shared.match(/https:\/\/[^\s<>"']+/i);
+  if(found){
+    $("yurl").value=found[0].replace(/[)\].,;]+$/,"");
+    $("yimport").click();
+  }
+}
 if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js").catch(()=>{});
 </script></body></html>
