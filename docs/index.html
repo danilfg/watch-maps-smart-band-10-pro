@@ -39,7 +39,15 @@ footer{font-size:11px;color:#7d8fa0;max-width:1020px;margin:auto;padding:10px 18
 <section class="card"><h2>3. Экспорт для браслета</h2><p>Можно загрузить готовый GPX или экспортировать построенный маршрут для будущего RPK и Bluetooth-моста.</p>
 <label>Импорт GPX-файла<input id="gpx-in" type="file" accept=".gpx,application/gpx+xml,text/xml"></label>
 <div id="route-stats" class="stats" hidden><div><small>Расстояние</small><strong id="km">—</strong></div><div><small>Время</small><strong id="mins">—</strong></div><div><small>Повороты</small><strong id="turn-num">—</strong></div></div>
-<div class="actions"><button id="json-export" class="main" disabled>Скачать JSON для часов</button><button id="gpx-export" disabled>Скачать GPX</button></div><div id="turns"></div>
+<div class="actions"><button id="json-export" class="main" disabled>Скачать JSON для часов</button><button id="gpx-export" disabled>Скачать GPX</button></div>
+<div id="route-rpk-panel" hidden style="background:#eaf3ff;border:1px solid #b5d5fc;border-radius:13px;padding:15px;margin:15px 0">
+<strong>📦 Персональный RPK для AstroBox</strong>
+<p class="small">Маршрут превращается в код для GitHub Actions. После сборки скачай .rpk и установи через AstroBox. Отдельный файл JSON AstroBox как приложение не устанавливает.</p>
+<label>Код маршрута (GitHub Actions → route_code)<textarea id="route-rpk-code" rows="3" readonly></textarea></label>
+<div class="actions"><button class="main" id="copy-rpk-code">Скопировать код</button><a style="display:inline-flex;align-items:center;padding:10px;border:1px solid #bad0ef;border-radius:10px;background:white;text-decoration:none;font-size:13px;font-weight:650" href="https://github.com/danilfg/watch-maps-smart-band-10-pro/actions/workflows/watch.yml" target="_blank" rel="noopener noreferrer">Собрать RPK в GitHub ↗</a></div>
+<p class="small">На странице GitHub нажми Run workflow → вставь код в route_code → Run workflow. После успешной сборки скачай Artifacts → WristRoute-Band10Pro-Demo-RPK, распакуй ZIP и установи .rpk в AstroBox.</p>
+<p class="small" style="color:#aa5823"><strong>Важно:</strong> маршрут может раскрывать личные адреса. Артефакты и данные сборок публичного GitHub-репозитория не следует считать приватными. RPK покажет список поворотов, но пока не использует GPS для автоматической навигации.</p>
+</div><div id="turns"></div>
 <div class="warning"><strong>Проверяем реальность передачи, а не имитируем её.</strong><div>Сейчас PWA строит и экспортирует маршрут, но ещё не умеет подключаться к Xiaomi и не устанавливает RPK. На iOS Safari нет штатного Web Bluetooth. Протокол связи и GPS в RPK требуют испытаний.</div><button type="button" id="ble-check" style="margin-top:9px">Проверить Bluetooth браузера</button></div></section>
 <div id="status" role="status" aria-live="polite">Готово. Выбери начало и конец маршрута или вставь ссылку Яндекса.</div></main>
 <footer>OpenStreetMap contributors · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">Лицензия OSM</a> · <a href="https://github.com/danilfg/watch-maps-smart-band-10-pro">Исходный код</a></footer>
@@ -57,7 +65,7 @@ function setPoint(t,p){if(t==="start")start=p;else end=p;$(t==="start"?"from":"t
 if(map){if(t==="start"&&markerStart)markerStart.remove();if(t==="end"&&markerEnd)markerEnd.remove();
 const m=L.circleMarker([p.lat,p.lon],{radius:9,weight:3,color:"white",fillColor:t==="start"?"#216fcd":"#ec5757",fillOpacity:1}).addTo(map);
 if(t==="start")markerStart=m;else markerEnd=m}select(t==="start"?"end":"start")}
-function clearRoute(){route=null;$("route-stats").hidden=true;$("json-export").disabled=true;$("gpx-export").disabled=true;$("turns").replaceChildren();if(routeLine){routeLine.remove();routeLine=null}}
+function clearRoute(){route=null;$("route-rpk-panel").hidden=true;$("route-rpk-code").value="";$("route-stats").hidden=true;$("json-export").disabled=true;$("gpx-export").disabled=true;$("turns").replaceChildren();if(routeLine){routeLine.remove();routeLine=null}}
 function parseYandexLink(input){let u;try{u=new URL(input.trim())}catch{throw Error("Нужна полная ссылка https://yandex.ru/maps/...")}
 if(u.protocol!=="https:"||!["yandex.ru","www.yandex.ru","maps.yandex.ru","yandex.com","www.yandex.com","maps.yandex.com","yandex.kz","maps.yandex.kz"].includes(u.hostname.toLowerCase()))throw Error("Допустимы только ссылки Яндекс Карт");
 const raw=u.searchParams.get("rtext");if(!raw)throw Error("Ссылка не содержит rtext. Открой её в Яндексе и скопируй полную ссылку с координатами");
@@ -69,7 +77,29 @@ function displayRoute(obj){if(!obj.coords||obj.coords.length<2)throw Error("Ма
 if(map){if(routeLine)routeLine.remove();routeLine=L.polyline(obj.coords.map(p=>[p.lat,p.lon]),{weight:6,color:"#1f6ddd"}).addTo(map);map.fitBounds(routeLine.getBounds(),{padding:[28,28],maxZoom:16})}
 $("route-stats").hidden=false;$("km").textContent=obj.km.toFixed(2)+" км";$("mins").textContent=obj.sec?Math.ceil(obj.sec/60)+" мин":"—";$("turn-num").textContent=String(obj.turns.length);
 $("turns").replaceChildren();obj.turns.slice(0,30).forEach(t=>{const div=document.createElement("div");div.textContent="↪ "+t.text; $("turns").appendChild(div)});
-$("json-export").disabled=false;$("gpx-export").disabled=false;message("Маршрут подготовлен. Можно скачать GPX и JSON. Автоматической отправки на часы пока нет.")}
+$("json-export").disabled=false;$("gpx-export").disabled=false;
+try{$("route-rpk-code").value=encodeWatchRoute(obj);$("route-rpk-panel").hidden=false}catch(e){$("route-rpk-panel").hidden=true;message("Код для RPK не создан: "+e.message,true);return}
+message("Маршрут подготовлен. Можно скачать GPX и JSON. Автоматической отправки на часы пока нет.")}
+function encodeWatchRoute(r){
+  if(!r.coords||r.coords.length<2)throw Error("Маршрут пуст");
+  const points=r.coords,stride=Math.max(1,Math.ceil((points.length-1)/260)),indexes=new Set([0,points.length-1]);
+  for(let i=0;i<points.length;i+=stride)indexes.add(i);
+  (r.turns||[]).forEach(t=>{if(Number.isInteger(t.index)&&t.index>=0&&t.index<points.length)indexes.add(t.index)});
+  const ids=Array.from(indexes).sort((a,b)=>a-b);
+  if(ids.length>400)throw Error("Слишком много координат для одного RPK");
+  const progress=[0];for(let i=1;i<points.length;i++)progress.push(progress[i-1]+distance(points[i-1],points[i]));
+  const payload={schema:"wristroute-route/1",mode:r.mode,distanceMeters:Math.round(r.km*1000),
+    points:ids.map(i=>[Number(points[i].lat.toFixed(5)),Number(points[i].lon.toFixed(5))]),
+    turns:(r.turns||[]).slice(0,60).map(t=>{
+      const j=Math.max(0,Math.min(points.length-1,t.index||0));
+      return {p:ids.indexOf(j),d:Math.round(progress[j]),c:Number(t.code)||0,t:String(t.text||"Поворот").slice(0,90)};
+    })};
+  const bytes=new TextEncoder().encode(JSON.stringify(payload));let b="";
+  for(let i=0;i<bytes.length;i+=8192)b+=String.fromCharCode(...bytes.subarray(i,i+8192));
+  const code=btoa(b).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+  if(code.length>40000)throw Error("Маршрут превышает лимит GitHub Actions");
+  return code;
+}
 function save(name,text,type){const u=URL.createObjectURL(new Blob([text],{type})),a=document.createElement("a");a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1500)}
 async function build(){if(!start||!end){message("Укажи начальную и конечную точки",true);return}let base;
 try{base=new URL($("endpoint").value.trim());if(base.protocol!=="https:"||!base.pathname.endsWith("/route"))throw Error()}catch{message("Нужен HTTPS-адрес Valhalla, оканчивающийся на /route",true);return}
@@ -96,6 +126,11 @@ $("yandex-open").onclick=()=>{const p=new URLSearchParams();if(end)p.set("rtext"
 $("build").onclick=build;$("gpx-in").onchange=importGpx;
 $("json-export").onclick=()=>{if(!route)return;const data={schema:"wrist-route/1",device:"xiaomi-smart-band-10-pro",mode:route.mode,source:route.source,createdAt:new Date().toISOString(),distanceMeters:Math.round(route.km*1000),points:route.coords.map(p=>[Number(p.lat.toFixed(6)),Number(p.lon.toFixed(6))]),turns:route.turns.map(t=>({pointIndex:t.index,code:t.code,text:t.text}))};save("wrist-route.json",JSON.stringify(data,null,2),"application/json")};
 $("gpx-export").onclick=()=>{if(!route)return;const pts=route.coords.map(p=>'<trkpt lat="'+p.lat+'" lon="'+p.lon+'"/>').join("");save("wrist-route.gpx",'<?xml version="1.0"?><gpx version="1.1" creator="WristRoute" xmlns="http://www.topografix.com/GPX/1/1"><trk><trkseg>'+pts+"</trkseg></trk></gpx>","application/gpx+xml")};
+$("copy-rpk-code").onclick=async()=>{
+  const code=$("route-rpk-code").value;
+  try{await navigator.clipboard.writeText(code);message("Код скопирован. Вставь его в GitHub Actions → route_code и запусти сборку.")}
+  catch(e){$("route-rpk-code").focus();$("route-rpk-code").select();message("Выделенный код скопируй вручную, затем вставь в GitHub Actions → route_code.")}
+};
 $("ble-check").onclick=()=>message("Web Bluetooth: "+(navigator.bluetooth?"доступен в браузере":"недоступен")+". Протокол Xiaomi пока не реализован: этот тест НЕ подключает браслет.");
 if(typeof L!=="undefined"){map=L.map("map").setView([55.751244,37.618423],12);L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(map);map.on("click",e=>setPoint(pick,coord(e.latlng.lat,e.latlng.lng)))}
 else message("Не удалось загрузить карту. Проверь интернет. GPX-импорт работает отдельно.",true);
