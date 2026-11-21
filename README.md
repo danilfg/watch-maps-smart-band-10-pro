@@ -9,6 +9,7 @@ Expected site after Pages activation: https://danilfg.github.io/watch-maps-smart
 - Select start/end on the map or use the phone's GPS.
 - Open *official* Yandex Maps in a new tab, preserving your logged-in Yandex session there.
 - Paste a full Yandex Maps route share URL with 'rtext=LAT,LON~LAT,LON'; parse endpoints **only**.
+- On supported Android Chrome installs, WristRoute registers as a Web Share Target for links from Yandex Maps. iOS Safari PWA users should paste a link manually.
 - Walking/cycling routing using an independently operated Valhalla endpoint, defaulting to the FOSSGIS public demo for **testing only**.
 - Show route geometry, distance, estimated duration, maneuvers supplied by Valhalla.
 - Import GPX, export GPX or versioned 'wrist-route/1' JSON for eventual wearable use.
