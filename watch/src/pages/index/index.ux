@@ -19,6 +19,7 @@
 </template>
 <script>
 import app from '@system.app'
+import routeData from '../../common/route-data.js'
 
 const DEMO = [
   { arrow: '↑', distance: '350 м', street: 'Идите прямо', hint: 'Демо-маршрут · Москва' },
@@ -35,7 +36,28 @@ export default {
     hint: 'Демо-маршрут · Москва',
     counter: '1 / 4'
   },
-  onInit() { this.applyStep() },
+  onInit() {
+    this._steps = DEMO
+    if (routeData && routeData.schema === 'wristroute-route/1' && routeData.points && routeData.points.length >= 2) {
+      const steps = (routeData.turns || []).slice(0,60).map(t => ({
+        arrow: this.arrowFor(t.c),
+        distance: Math.round(t.d) + ' м',
+        street: String(t.t).slice(0,42),
+        hint: 'Расстояние от старта'
+      }))
+      this._steps = [{arrow:'↑', distance:'0 м', street:'Начало маршрута', hint:routeData.mode === 'bicycle'?'Велосипед':'Пешком'}]
+        .concat(steps)
+        .concat([{arrow:'✓', distance:routeData.distanceMeters+' м', street:'Маршрут завершён', hint:'Конец списка инструкций'}])
+    }
+    this.applyStep()
+  },
+  arrowFor(code) {
+    if ([9,10,11,17,18,19].indexOf(code) >= 0) return '↱'
+    if ([14,15,16,21,22,23].indexOf(code) >= 0) return '↰'
+    if ([12,13].indexOf(code) >= 0) return '↶'
+    if ([4,5,6].indexOf(code) >= 0) return '✓'
+    return '↑'
+  },
   onBackPress() { this.exitApp(); return true },
   handleSwipe(e) {
     if (!e) return
@@ -44,7 +66,7 @@ export default {
     else if (e.direction === 'down') this.previous()
   },
   next() {
-    if (this.index < DEMO.length - 1) this.index += 1
+    if (this.index < this._steps.length - 1) this.index += 1
     this.applyStep()
   },
   previous() {
@@ -52,12 +74,12 @@ export default {
     this.applyStep()
   },
   applyStep() {
-    const step = DEMO[this.index]
+    const step = this._steps[this.index]
     this.arrow = step.arrow
     this.distance = step.distance
     this.street = step.street
     this.hint = step.hint
-    this.counter = (this.index + 1) + ' / ' + DEMO.length
+    this.counter = (this.index + 1) + ' / ' + this._steps.length
   },
   exitApp() { app.terminate() }
 }
