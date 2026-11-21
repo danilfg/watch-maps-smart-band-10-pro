@@ -38,12 +38,12 @@ jobs:
         run: |
           test -n "$(find watch/dist -type f -name '*.rpk' -print -quit)"
           mkdir -p out
-          find watch/dist -type f -name '*.rpk' -exec cp {} out/WristRoute-Band10Pro-Demo.rpk \;
-          test -s out/WristRoute-Band10Pro-Demo.rpk
+          find watch/dist -type f -name '*.rpk' -exec cp {} out/WristRoute-Band10Pro.rpk \;
+          test -s out/WristRoute-Band10Pro.rpk
       - uses: actions/upload-artifact@v4
         with:
-          name: WristRoute-Band10Pro-Demo-RPK
-          path: out/WristRoute-Band10Pro-Demo.rpk
+          name: WristRoute-Installable-RPK
+          path: out/WristRoute-Band10Pro.rpk
           if-no-files-found: error
       - name: Publish demo RPK release
         if: github.ref == 'refs/heads/main' && inputs.route_code == ''
@@ -51,7 +51,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="watch-demo-${{ github.run_number }}"
-          gh release create "$TAG" out/WristRoute-Band10Pro-Demo.rpk \
+          gh release create "$TAG" out/WristRoute-Band10Pro.rpk \
             --title "WristRoute demo $TAG" \
             --notes "Offline navigation UI demo ONLY. No live GPS, no Bluetooth sync, no real directions. For Chinese Xiaomi Band 10 Pro Vela firmware; test compatibility carefully."
             --latest
