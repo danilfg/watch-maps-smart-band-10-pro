@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ru"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#152a46"><meta name="description" content="WristRoute: пешие и велосипедные маршруты для Xiaomi Smart Band 10 Pro">
+<link rel="manifest" href="./manifest.webmanifest"><link rel="icon" type="image/svg+xml" href="./icon.svg">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<title>WristRoute — карты для браслета</title>
+<style>
+:root{font-family:system-ui,-apple-system,Arial,sans-serif;color:#152a46;background:#f4f7fb}*{box-sizing:border-box}body{margin:0}
+header{background:white;border-bottom:1px solid #dce6f0;padding:14px max(16px,calc((100vw - 1020px)/2));display:flex;justify-content:space-between;align-items:center}
+.brand{display:flex;align-items:center;gap:11px;font-weight:800;font-size:19px}.logo{background:#236dc5;border-radius:12px;color:white;padding:9px 13px}.sub{font-weight:400;font-size:11px;color:#778ca1;display:block}.pill{border-radius:25px;background:#eaf3ff;color:#2162aa;padding:7px 11px;font-size:12px}
+main{max-width:1020px;margin:auto;padding:18px}.hero{border-radius:23px;background:linear-gradient(120deg,#172b49,#246aba);color:white;padding:29px;margin-bottom:17px}
+h1{font-size:clamp(28px,5vw,44px);line-height:1.14;letter-spacing:-1px;margin:10px 0}h1 span{color:#a9d4ff}.hero p{font-size:14px;line-height:1.5;color:#e0eefe;max-width:650px;margin:0}
+section.card{background:white;border:1px solid #e0e8f2;border-radius:19px;padding:20px;margin:15px 0}h2{font-size:20px;margin:0 0 5px}section.card>p{font-size:13px;color:#6c8094;line-height:1.5;margin:5px 0 15px}
+button{font:inherit;cursor:pointer;border:1px solid #d6e2f0;color:#28506f;background:white;border-radius:11px;padding:11px 15px;font-size:13px;font-weight:650}
+button.main{background:#216fd0;border-color:#216fd0;color:#fff}button:disabled{opacity:.45;cursor:not-allowed}button.selected{background:#e7f3ff;border-color:#7cb6f3;color:#135d9a}
+.group,.actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.group button{flex:1}
+#map{height:365px;border-radius:13px;overflow:hidden;background:#e3ebf5;border:1px solid #d4e0ed}.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:13px}
+label{display:block;font-size:12px;font-weight:650;color:#4c6278}input,textarea{display:block;width:100%;border:1px solid #d7e2ec;background:#f9fbfe;border-radius:10px;padding:11px;font:inherit;font-size:13px;color:#21384e;margin:6px 0}textarea{min-height:72px;resize:vertical}
+.small{font-size:12px;color:#6e8194;line-height:1.6}.warning{border:1px solid #efd9b1;border-radius:12px;background:#fff8eb;padding:15px;color:#705d3b;font-size:13px;line-height:1.5}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.stats>div{background:#eef5fd;border-radius:12px;padding:12px}.stats small{color:#6e8094;display:block}.stats strong{font-size:18px}
+#turns>div{border-bottom:1px solid #edf0f6;padding:9px 0;color:#52697f;font-size:13px}
+#status{background:#e6f2ff;color:#1c4c7f;padding:14px;border-radius:12px;font-size:13px;line-height:1.5}#status.bad{background:#ffe7e9;color:#9a2734}
+footer{font-size:11px;color:#7d8fa0;max-width:1020px;margin:auto;padding:10px 18px 32px}a{color:#1e6cae}details{font-size:12px;margin:14px 0;color:#6c8094}
+@media(max-width:600px){header{padding:11px 14px}main{padding:11px}.hero{padding:23px 19px}.card{padding:14px!important}#map{height:340px}.fields{grid-template-columns:1fr}.actions button{flex:1;min-width:138px}.stats strong{font-size:15px}}
+</style></head><body>
+<header><div class="brand"><span class="logo">↗</span><div>WristRoute<span class="sub">Xiaomi Smart Band 10 Pro · прототип</span></div></div><span class="pill">PWA</span></header>
+<main><div class="hero"><div style="font-size:11px;letter-spacing:2px;color:#b8dbfc">НАВИГАЦИЯ НА ЗАПЯСТЬЕ</div><h1>Выбери маршрут.<br><span>Подготовь для браслета.</span></h1><p>Москва и другие города. Пешком или на велосипеде. Яндекс Карты — для привычного поиска маршрутов, OpenStreetMap — для независимого расчёта.</p></div>
+<section class="card"><h2>1. Построить маршрут</h2><p>Нажми на карте первую точку, затем вторую. Можно использовать GPS телефона.</p>
+<div class="group"><button type="button" id="walk" class="selected">🚶 Пешком</button><button type="button" id="bike">🚲 Велосипед</button></div>
+<div id="map" aria-label="Карта с выбором точек"></div>
+<div class="group"><button id="start-pick" class="selected">📍 Указать старт</button><button id="end-pick">🏁 Указать финиш</button><button id="geo">◎ Я здесь</button></div>
+<div class="fields"><label>Откуда<input id="from" placeholder="Выбери начало на карте" readonly></label><label>Куда<input id="to" placeholder="Выбери финиш на карте" readonly></label></div>
+<div class="actions"><button id="build" class="main">Построить маршрут</button><button id="yandex-open">Открыть Яндекс Карты ↗</button></div>
+<details><summary>Сервер маршрутизации</summary><p>По умолчанию используется публичный демосервер Valhalla без гарантий доступности. Для постоянного использования разверни собственный экземпляр.</p><label>HTTPS-адрес Valhalla /route<input id="endpoint" value="https://valhalla1.openstreetmap.de/route"></label></details></section>
+<section class="card"><h2>2. Импорт из Яндекс Карт</h2><p>Построй маршрут в Яндексе, нажми «Поделиться» и вставь полную ссылку сюда. Существующий вход в Яндекс остаётся только у Яндекса.</p>
+<label>Ссылка Яндекс Карт<textarea id="yurl" placeholder="https://yandex.ru/maps/?rtext=55.75,37.61~55.76,37.63"></textarea></label>
+<button id="yimport">Импортировать точки</button><p class="small">Это импорт начальной и конечной точки, а не точной линии из Яндекса. Маршрут на нашем сайте строится заново по OpenStreetMap. Короткие ссылки пока не поддерживаются.</p></section>
+<section class="card"><h2>3. Экспорт для браслета</h2><p>Можно загрузить готовый GPX или экспортировать построенный маршрут для будущего RPK и Bluetooth-моста.</p>
+<label>Импорт GPX-файла<input id="gpx-in" type="file" accept=".gpx,application/gpx+xml,text/xml"></label>
+<div id="route-stats" class="stats" hidden><div><small>Расстояние</small><strong id="km">—</strong></div><div><small>Время</small><strong id="mins">—</strong></div><div><small>Повороты</small><strong id="turn-num">—</strong></div></div>
+<div class="actions"><button id="json-export" class="main" disabled>Скачать JSON для часов</button><button id="gpx-export" disabled>Скачать GPX</button></div><div id="turns"></div>
+<div class="warning"><strong>Проверяем реальность передачи, а не имитируем её.</strong><div>Сейчас PWA строит и экспортирует маршрут, но ещё не умеет подключаться к Xiaomi и не устанавливает RPK. На iOS Safari нет штатного Web Bluetooth. Протокол связи и GPS в RPK требуют испытаний.</div><button type="button" id="ble-check" style="margin-top:9px">Проверить Bluetooth браузера</button></div></section>
+<div id="status" role="status" aria-live="polite">Готово. Выбери начало и конец маршрута или вставь ссылку Яндекса.</div></main>
+<footer>OpenStreetMap contributors · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">Лицензия OSM</a> · <a href="https://github.com/danilfg/watch-maps-smart-band-10-pro">Исходный код</a></footer>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+"use strict";
+const $=id=>document.getElementById(id), rad=Math.PI/180;
+let map=null,markerStart=null,markerEnd=null,routeLine=null,start=null,end=null,route=null,mode="pedestrian",pick="start";
+function message(s,bad=false){$("status").textContent=s;$("status").classList.toggle("bad",bad)}
+function coord(lat,lon){lat=Number(lat);lon=Number(lon);if(!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180)throw Error("Неверные координаты");return {lat,lon}}
+function parsePoint(s){const a=s.split(",");if(a.length!==2||a.some(x=>!x.trim()))throw Error("Ожидались координаты в формате широта,долгота");return coord(a[0],a[1])}
+function show(p){return p.lat.toFixed(6)+", "+p.lon.toFixed(6)}
+function select(t){pick=t;$("start-pick").classList.toggle("selected",t==="start");$("end-pick").classList.toggle("selected",t==="end")}
+function setPoint(t,p){if(t==="start")start=p;else end=p;$(t==="start"?"from":"to").value=show(p);clearRoute();
+if(map){if(t==="start"&&markerStart)markerStart.remove();if(t==="end"&&markerEnd)markerEnd.remove();
+const m=L.circleMarker([p.lat,p.lon],{radius:9,weight:3,color:"white",fillColor:t==="start"?"#216fcd":"#ec5757",fillOpacity:1}).addTo(map);
+if(t==="start")markerStart=m;else markerEnd=m}select(t==="start"?"end":"start")}
+function clearRoute(){route=null;$("route-stats").hidden=true;$("json-export").disabled=true;$("gpx-export").disabled=true;$("turns").replaceChildren();if(routeLine){routeLine.remove();routeLine=null}}
+function parseYandexLink(input){let u;try{u=new URL(input.trim())}catch{throw Error("Нужна полная ссылка https://yandex.ru/maps/...")}
+if(u.protocol!=="https:"||!["yandex.ru","www.yandex.ru","maps.yandex.ru","yandex.com","www.yandex.com","maps.yandex.com","yandex.kz","maps.yandex.kz"].includes(u.hostname.toLowerCase()))throw Error("Допустимы только ссылки Яндекс Карт");
+const raw=u.searchParams.get("rtext");if(!raw)throw Error("Ссылка не содержит rtext. Открой её в Яндексе и скопируй полную ссылку с координатами");
+const parts=raw.split("~");if(parts.length<2||parts.length>12)throw Error("Не удалось прочитать точки маршрута");
+return {from:parts[0]?parsePoint(parts[0]):null,to:parsePoint(parts[parts.length-1]),via:parts.length-2}}
+function decode6(s){let i=0,a=0,b=0,out=[];while(i<s.length){for(let k=0;k<2;k++){let v=0,shift=0,ch;do{if(i>=s.length||shift>35)throw Error("Повреждённая полилиния");ch=s.charCodeAt(i++)-63;if(ch<0||ch>63)throw Error("Повреждённая полилиния");v|=(ch&31)<<shift;shift+=5}while(ch>=32);if(k===0)a+=(v&1)?~(v>>1):v>>1;else b+=(v&1)?~(v>>1):v>>1}out.push(coord(a/1e6,b/1e6));if(out.length>15000)throw Error("Слишком длинный маршрут")}return out}
+function distance(a,b){const x=(b.lat-a.lat)*rad,y=(b.lon-a.lon)*rad,h=Math.sin(x/2)**2+Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(y/2)**2;return 12742000*Math.asin(Math.min(1,Math.sqrt(h)))}
+function displayRoute(obj){if(!obj.coords||obj.coords.length<2)throw Error("Маршрут должен содержать минимум две точки");route=obj;
+if(map){if(routeLine)routeLine.remove();routeLine=L.polyline(obj.coords.map(p=>[p.lat,p.lon]),{weight:6,color:"#1f6ddd"}).addTo(map);map.fitBounds(routeLine.getBounds(),{padding:[28,28],maxZoom:16})}
+$("route-stats").hidden=false;$("km").textContent=obj.km.toFixed(2)+" км";$("mins").textContent=obj.sec?Math.ceil(obj.sec/60)+" мин":"—";$("turn-num").textContent=String(obj.turns.length);
+$("turns").replaceChildren();obj.turns.slice(0,30).forEach(t=>{const div=document.createElement("div");div.textContent="↪ "+t.text; $("turns").appendChild(div)});
+$("json-export").disabled=false;$("gpx-export").disabled=false;message("Маршрут подготовлен. Можно скачать GPX и JSON. Автоматической отправки на часы пока нет.")}
+function save(name,text,type){const u=URL.createObjectURL(new Blob([text],{type})),a=document.createElement("a");a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1500)}
+async function build(){if(!start||!end){message("Укажи начальную и конечную точки",true);return}let base;
+try{base=new URL($("endpoint").value.trim());if(base.protocol!=="https:"||!base.pathname.endsWith("/route"))throw Error()}catch{message("Нужен HTTPS-адрес Valhalla, оканчивающийся на /route",true);return}
+const q={locations:[start,end],costing:mode,language:"ru-RU",units:"kilometers",shape_format:"polyline6"};
+$("build").disabled=true;message("Запрашиваю маршрут у Valhalla…");
+try{const response=await fetch(base.toString()+"?json="+encodeURIComponent(JSON.stringify(q)),{headers:{"X-Client-Id":"danilfg/watch-maps-smart-band-10-pro"},signal:AbortSignal.timeout(20000)});
+if(!response.ok)throw Error("HTTP "+response.status);const data=await response.json();if(!data.trip?.legs?.length)throw Error("Маршрут не найден");
+const coords=[],turns=[];for(const leg of data.trip.legs){const segment=decode6(leg.shape||"");const offset=coords.length?coords.length-1:0;coords.push(...(coords.length?segment.slice(1):segment));(leg.maneuvers||[]).forEach(m=>turns.push({index:offset+Number(m.begin_shape_index||0),code:m.type,text:String(m.instruction||"Манёвр")}))}
+displayRoute({source:"valhalla-osm",mode,coords,turns,km:Number(data.trip.summary?.length||0),sec:Number(data.trip.summary?.time||0)});
+}catch(e){message("Маршрут не получен: "+e.message+". Демосервер бывает недоступен. Попробуй импортировать GPX.",true)}
+finally{$("build").disabled=false}}
+async function importGpx(){const file=$("gpx-in").files?.[0];if(!file)return;try{if(file.size>3000000)throw Error("Файл больше 3 МБ");const doc=new DOMParser().parseFromString(await file.text(),"application/xml");
+if(doc.getElementsByTagName("parsererror").length)throw Error("Некорректный XML");let nodes=Array.from(doc.getElementsByTagNameNS("*","trkpt"));if(!nodes.length)nodes=Array.from(doc.getElementsByTagNameNS("*","rtept"));
+if(nodes.length<2||nodes.length>15000)throw Error("Нужно 2–15000 GPS-точек");const coords=nodes.map(n=>coord(n.getAttribute("lat"),n.getAttribute("lon")));let meters=0;for(let i=1;i<coords.length;i++)meters+=distance(coords[i-1],coords[i]);
+start=coords[0];end=coords[coords.length-1];$("from").value=show(start);$("to").value=show(end);
+displayRoute({source:"gpx",mode,coords,turns:[],km:meters/1000,sec:0});message("GPX импортирован. Точные инструкции поворотов неизвестны: доступна линия маршрута.");
+}catch(e){message("Ошибка GPX: "+e.message,true)}}
+$("walk").onclick=()=>{mode="pedestrian";$("walk").classList.add("selected");$("bike").classList.remove("selected");clearRoute()};
+$("bike").onclick=()=>{mode="bicycle";$("bike").classList.add("selected");$("walk").classList.remove("selected");clearRoute()};
+$("start-pick").onclick=()=>select("start");$("end-pick").onclick=()=>select("end");
+$("geo").onclick=()=>{if(!navigator.geolocation){message("GPS недоступен в браузере",true);return}message("Ожидаю разрешения на GPS…");navigator.geolocation.getCurrentPosition(p=>{setPoint("start",coord(p.coords.latitude,p.coords.longitude));if(map)map.setView([start.lat,start.lon],15);message("Координаты получены. Укажи финиш на карте.")},e=>message(e.message,true),{enableHighAccuracy:true,timeout:15000})};
+$("yimport").onclick=()=>{try{const r=parseYandexLink($("yurl").value);if(r.from)setPoint("start",r.from);setPoint("end",r.to);if(map){if(start)map.fitBounds([[start.lat,start.lon],[end.lat,end.lon]],{padding:[30,30]});else map.setView([end.lat,end.lon],14)}message("Импортированы координаты "+(r.from?"старта и финиша":"финиша")+(r.via?". Промежуточные точки пока не учтены.":".")+" Теперь маршрут можно пересчитать в Valhalla.")}catch(e){message(e.message,true)}};
+$("yandex-open").onclick=()=>{const p=new URLSearchParams();if(end)p.set("rtext",(start?start.lat+","+start.lon:"")+"~"+end.lat+","+end.lon);window.open("https://yandex.ru/maps/"+(p.size?"?"+p.toString():""),"_blank","noopener,noreferrer")};
+$("build").onclick=build;$("gpx-in").onchange=importGpx;
+$("json-export").onclick=()=>{if(!route)return;const data={schema:"wrist-route/1",device:"xiaomi-smart-band-10-pro",mode:route.mode,source:route.source,createdAt:new Date().toISOString(),distanceMeters:Math.round(route.km*1000),points:route.coords.map(p=>[Number(p.lat.toFixed(6)),Number(p.lon.toFixed(6))]),turns:route.turns.map(t=>({pointIndex:t.index,code:t.code,text:t.text}))};save("wrist-route.json",JSON.stringify(data,null,2),"application/json")};
+$("gpx-export").onclick=()=>{if(!route)return;const pts=route.coords.map(p=>'<trkpt lat="'+p.lat+'" lon="'+p.lon+'"/>').join("");save("wrist-route.gpx",'<?xml version="1.0"?><gpx version="1.1" creator="WristRoute" xmlns="http://www.topografix.com/GPX/1/1"><trk><trkseg>'+pts+"</trkseg></trk></gpx>","application/gpx+xml")};
+$("ble-check").onclick=()=>message("Web Bluetooth: "+(navigator.bluetooth?"доступен в браузере":"недоступен")+". Протокол Xiaomi пока не реализован: этот тест НЕ подключает браслет.");
+if(typeof L!=="undefined"){map=L.map("map").setView([55.751244,37.618423],12);L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(map);map.on("click",e=>setPoint(pick,coord(e.latlng.lat,e.latlng.lng)))}
+else message("Не удалось загрузить карту. Проверь интернет. GPX-импорт работает отдельно.",true);
+if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js").catch(()=>{});
+</script></body></html>
