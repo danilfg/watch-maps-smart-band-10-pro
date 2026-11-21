@@ -61,3 +61,5 @@ Use [GitHub Actions — Build WristRoute RPK](https://github.com/danilfg/watch-m
 AstroBox does not install a bare GPX/JSON as a watch application, so this route code is compiled into a normal Xiaomi Vela RPK by `aiot-toolkit`. No GitHub personal access token is embedded in Pages. Routes are **not** added to public Releases: personalized builds remain in workflow artifacts. However, this is a public repository and run data/artifacts must not be considered private — avoid private home/work addresses.
 
 This is intentionally a manual path (copy → workflow → artifact → AstroBox), not a seamless one-click transfer on iPhone. The companion BLE/Interconnect feature needs separate compatibility testing.
+
+<!-- Pages redeploy trigger after enabling GitHub Actions as Pages source: 2026-11-21 -->
