@@ -10,7 +10,7 @@ test('PWA inline JavaScript has valid syntax',()=>{
 });
 test('PWA explicitly has no watch transfer',()=>{
   const html=fs.readFileSync('docs/index.html','utf8');
-  assert.match(html,/пока не умеет подключаться к Xiaomi/);
+  assert.match(html,/не умеет подключаться к Xiaomi/);
   assert.match(html,/function parseYandexLink/);
   assert.match(html,/function decode6/);
   assert.match(html,/GPX/);
